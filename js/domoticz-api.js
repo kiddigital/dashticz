@@ -24,6 +24,7 @@ var Domoticz = (function () {
     info: 'type=command&param=getversion',
     secpanel: 'type=command&param=getsecstatus',
     getSettings: 'type=settings',
+    getLogin: 'type=command&param=logincheck',
   };
 
   function domoticzQuery(query) {
@@ -142,7 +143,8 @@ var Domoticz = (function () {
       if (cfg.url.charAt(cfg.url.length - 1) !== '/') cfg.url += '/';
       if (cfg.usrEnc && cfg.usrEnc.length)
         usrinfo = 'username=' + cfg.usrEnc + '&password=' + cfg.pwdEnc + '&';
-      initPromise = checkWSSupport()
+      if (checkAuthStatus === true) {
+        initPromise = checkWSSupport()
         .catch(function () {
           useWS = false;
           console.log(
@@ -158,6 +160,7 @@ var Domoticz = (function () {
         .then(requestSecurityStatus)
         .then(requestSettings)
         .then(addStubDevices);
+      }
     }
     return initPromise;
   }
@@ -476,6 +479,20 @@ var Domoticz = (function () {
 
   function getAllDevices() {
     return deviceObservable._values;
+  }
+
+  function checkAuthStatus() {
+    return domoticzRequest(MSG['getLogin']).then(function (res) {
+      cfg.auth = false;
+      if (res) {
+        Debug.log('[auth]:', res.status);
+        if (res.status === 'OK')
+        {
+          cfg.auth = true;
+        }
+      }
+      return cfg.auth;
+    });
   }
 
   function requestSecurityStatus() {
