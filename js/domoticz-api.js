@@ -24,7 +24,7 @@ var Domoticz = (function () {
     info: 'type=command&param=getversion',
     secpanel: 'type=command&param=getsecstatus',
     getSettings: 'type=settings',
-    getLogin: 'type=command&param=logincheck',
+    getAuth: 'type=command&param=getauth',
   };
 
   function domoticzQuery(query) {
@@ -140,27 +140,27 @@ var Domoticz = (function () {
         throw new Error('Domoticz url not defined');
       }
       cfg = initcfg;
+      cfg.auth = false;
       if (cfg.url.charAt(cfg.url.length - 1) !== '/') cfg.url += '/';
       if (cfg.usrEnc && cfg.usrEnc.length)
         usrinfo = 'username=' + cfg.usrEnc + '&password=' + cfg.pwdEnc + '&';
-      if (checkAuthStatus === true) {
-        initPromise = checkWSSupport()
-        .catch(function () {
-          useWS = false;
-          console.log(
-            'Websocket failed, switch back to http. Check IP whitelisting in Domoticz.'
-          );
-        })
-        .then(function () {
-          setInterval(function () {
-            refreshAll();
-          }, cfg.domoticz_refresh * 1000);
-          return refreshAll();
-        })
-        .then(requestSecurityStatus)
-        .then(requestSettings)
-        .then(addStubDevices);
-      }
+      initPromise = checkWSSupport()
+      .catch(function () {
+        useWS = false;
+        console.log(
+          'Websocket failed, switch back to http. Check IP whitelisting in Domoticz.'
+        );
+      })
+      .then(checkAuthStatus)
+      .then(function () {
+        setInterval(function () {
+          refreshAll();
+        }, cfg.domoticz_refresh * 1000);
+        return refreshAll();
+      })
+      .then(requestSecurityStatus)
+      .then(requestSettings)
+      .then(addStubDevices);
     }
     return initPromise;
   }
@@ -172,12 +172,14 @@ var Domoticz = (function () {
   }
 
   function refreshAll() {
-    if (cfg.refresh_method || !useWS) {
-      return requestAllVariables().then(function () {
-        return requestAllDevices();
-      });
-    } else {
-      return requestAllVariables().then(requestAllScenes);
+    if (cfg.auth) {
+      if (cfg.refresh_method || !useWS) {
+        return requestAllVariables().then(function () {
+          return requestAllDevices();
+        });
+      } else {
+        return requestAllVariables().then(requestAllScenes);
+      }
     }
   }
 
@@ -482,13 +484,15 @@ var Domoticz = (function () {
   }
 
   function checkAuthStatus() {
-    return domoticzRequest(MSG['getLogin']).then(function (res) {
+    return domoticzRequest(MSG['getAuth']).then(function (res) {
       cfg.auth = false;
       if (res) {
-        Debug.log('[auth]:', res.status);
+        Debug.log('[auth]:', res);
         if (res.status === 'OK')
         {
-          cfg.auth = true;
+          cfg.authisloggedin = (res.user != "");
+          cfg.authrights = parseInt(res.rights);
+          cfg.auth = (cfg.authrights > 0);
         }
       }
       return cfg.auth;
