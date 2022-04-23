@@ -11,7 +11,7 @@ function validate() {
     var loginDuration = new Date();
     loginDuration.setTime(loginDuration.getTime() + sessionTimeout * 60 * 1000);
     var expires = 'expires=' + loginDuration.toUTCString();
-    document.cookie = 'CrewCentreSession=Valid; ' + expires + '; path=/';
+    document.cookie = 'DashticzSession=Valid; ' + expires + '; path=/';
     // eslint-disable-next-line no-self-assign
     window.location.href = window.location.href;
     return false;
@@ -35,7 +35,7 @@ function validate() {
 function sessionValid() {
   if (
     settings['loginEnabled'] == true &&
-    document.cookie.indexOf('CrewCentreSession=Valid') == -1
+    document.cookie.indexOf('DashticzSession=Valid') == -1
   ) {
     $('#loaderHolder').remove();
     $('.dt-container').remove();
@@ -51,7 +51,7 @@ function sessionValid() {
 function logout() {
   //used by settings.js html onClick event
   document.cookie =
-    'CrewCentreSession=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    'DashticzSession=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
   // eslint-disable-next-line no-self-assign
   window.location.href = window.location.href;
 }
