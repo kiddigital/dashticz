@@ -245,14 +245,20 @@ function loadFiles(dashtype) {
         DT_function.loadDTScript('js/colorpicker.js'),
         DT_function.loadDTScript('js/fullscreen.js')
       )
+    })
+    .then(function () {
+      sessionvalid = sessionValid();
+      return $.when(
+        DT_function.loadDTScript('js/dashticz.js'),
+      )
         .then(function () {
-          return Dashticz.init();
+          if (sessionvalid)
+            return Dashticz.init();
         })
     })
     .then(function () {
       if (settings['security_panel_lock'])
         Domoticz.subscribe('_secstatus', true, checkSecurityStatus);
-      sessionvalid = sessionValid();
 
       if (
         typeof settings['gm_api'] !== 'undefined' &&
